@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse, HttpResponseRedirect
 from .models import Choice, Question
 from django.views import generic
+from django.utils import timezone
 # Create your views here.
 # views are a type of web page in the Django app
 # They will all have their own template as part of a specific function.
@@ -14,8 +15,13 @@ class IndexView(generic.ListView):
     context_object_name = 'latest_question_list'
 
     def get_queryset(self):
-        "Return the last five published questions"
-        return Question.objects.order_by('-pub_date')[:5]
+ """
+    Return the last five published questions (not including those set to be
+    published in the future).
+    """
+    return Question.objects.filter(
+        pub_date_lte=timezone.now()
+    ).order_by('-pub_date')[:5]
 
 class DetailView(generic.DetailView):
     model = Question
@@ -46,3 +52,13 @@ def vote(request, question_id):
 def results(request, question_id):
     question = get_object_or_404(Question, pk=question.id)
     return render(request, 'polls/results.html', {'question': question})
+
+
+class DetailView(generic.DetailView):
+    def get_queryset(self):
+        """
+        Excludes any questions that aren't published yet.
+        """
+        return Question.objects.filter(pub_date_lte=timezone.now())
+
+        
